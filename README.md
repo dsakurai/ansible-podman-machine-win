@@ -13,5 +13,5 @@ sudo apt install ansible
 
 Do a git clone, enter the directory, and
 ```
-ansible-playbook ansible.yml --ask-become-password
+ansible-playbook ansible.yml --ask-become-pass
 ```
