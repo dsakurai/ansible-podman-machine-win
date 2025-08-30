@@ -1,0 +1,35 @@
+---
+- name: Set up podman machine on WSL2
+  hosts: localhost
+
+  tasks:
+    - name: install neovim
+      become: true
+      dnf:
+        name: neovim
+    - name: install git
+      become: true
+      dnf:
+        name: git
+    - name: install bash-completion
+      become: true
+      dnf:
+        name: bash-completion
+
+    - name: Cycle bash completion with TAB
+      blockinfile:
+        block: |
+          TAB: menu-complete
+          "\e[Z": menu-complete-backward
+          set editing-mode vi
+          set keymap vi-command
+        dest: ~/.inputrc
+        create: true
+
+    - name: install podman-compose
+      become: true
+      dnf:
+        name: podman-compose
+
+    - name: git set up
+      shell: git config --global init.defaultBranch main
