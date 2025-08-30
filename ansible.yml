@@ -6,10 +6,6 @@
     - name: install neovim
       become: true
       dnf:
-        name: dbus
-    - name: install neovim
-      become: true
-      dnf:
         name: neovim
     - name: install git
       become: true
