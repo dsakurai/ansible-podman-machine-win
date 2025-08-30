@@ -74,6 +74,17 @@
         - name: Enable and start ssh-agent user service
           command: systemctl --user enable --now ssh-agent.service
 
+        - name: Warning
+          debug:
+            msg: If podman compose shows WARNING, run `sudo mount --make-rshared /`
+        - name: make shared
+          become: true
+          blockinfile:
+            path: /etc/wsl.conf
+            block: |
+              command="mount --make-rshared /"
+
+
 
         # - name: Enable lingering
         #   command: "loginctl enable-linger"
