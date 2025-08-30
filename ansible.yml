@@ -6,6 +6,10 @@
     - name: install neovim
       become: true
       dnf:
+        name: dbus
+    - name: install neovim
+      become: true
+      dnf:
         name: neovim
     - name: install git
       become: true
@@ -23,6 +27,9 @@
           "\e[Z": menu-complete-backward
           set editing-mode vi
           set keymap vi-command
+          "\C-l": clear-screen
+          set keymap vi-insert
+          "\C-l": clear-screen
         dest: ~/.inputrc
         create: true
 
@@ -33,5 +40,30 @@
 
     - name: git set up
       shell: git config --global init.defaultBranch main
+    
+    - name: ssh
+      block:
+        - name: ensure directory exits
+          file:
+            path: "~/.ssh"
+            state: directory
+            mode: "0700"
+        - name: ssh agent
+          blockinfile:
+            create: true
+            path: ~/.ssh/config
+            block: |
+              AddKeysToAgent yes
+
+        - name: Enable and start ssh-agent for target user
+          blockinfile:
+            create: true
+            path: ~/.bashrc
+            block: |
+              # Start ssh-agent if not running
+              if [ -z "$SSH_AUTH_SOCK" ] || ! [ -S "$SSH_AUTH_SOCK" ]; then
+                  eval "$(ssh-agent -s)" > /dev/null
+              fi
+
 
 
