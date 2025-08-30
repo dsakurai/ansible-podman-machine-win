@@ -5,16 +5,8 @@
   tasks:
     - name: install neovim
       become: true
-      dnf:
+      apt:
         name: neovim
-    - name: install git
-      become: true
-      dnf:
-        name: git
-    - name: install bash-completion
-      become: true
-      dnf:
-        name: bash-completion
 
     - name: Cycle bash completion with TAB
       blockinfile:
@@ -31,7 +23,7 @@
 
     - name: install podman-compose
       become: true
-      dnf:
+      apt:
         name: podman-compose
 
     - name: git set up
@@ -50,16 +42,40 @@
             path: ~/.ssh/config
             block: |
               AddKeysToAgent yes
+              IdentityAgent /run/user/1000/ssh-agent.socket
 
-        - name: Enable and start ssh-agent for target user
-          blockinfile:
-            create: true
-            path: ~/.bashrc
-            block: |
-              # Start ssh-agent if not running
-              if [ -z "$SSH_AUTH_SOCK" ] || ! [ -S "$SSH_AUTH_SOCK" ]; then
-                  eval "$(ssh-agent -s)" > /dev/null
-              fi
+        - name: ensure directory exits
+          file:
+            dest: "~/.config/systemd/user"
+            state: directory
+            mode: "0700"
+        - name: Install ssh-agent user service
+          copy:
+            dest: "~/.config/systemd/user/ssh-agent.service"
+            mode: "0644"
+            content: |
+              [Unit]
+              Description=SSH Agent
 
+              [Service]
+              Type=simple
+              # Fixed socket in the user's runtime dir:
+              ExecStart=/usr/bin/ssh-agent -D -a %t/ssh-agent.socket
+              # Optional security hardening:
+              PrivateTmp=yes
+              NoNewPrivileges=yes
+
+              [Install]
+              WantedBy=default.target
+
+        - name: Reload user systemd daemon
+          command: systemctl --user daemon-reload
+
+        - name: Enable and start ssh-agent user service
+          command: systemctl --user enable --now ssh-agent.service
+
+
+        # - name: Enable lingering
+        #   command: "loginctl enable-linger"
 
 
