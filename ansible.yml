@@ -3,6 +3,12 @@
   hosts: localhost
 
   tasks:
+    - name: Update and upgrade
+      become: true
+      apt:
+        upgrade: full
+        update_cache: true
+
     - name: install neovim
       become: true
       apt:
