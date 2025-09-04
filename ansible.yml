@@ -14,6 +14,10 @@
       apt:
         name: neovim
 
+    - name: Set editor
+      shell: update-alternatives --install /usr/bin/editor editor /usr/bin/nvim 100
+      become: true
+
     - name: install podman-compose
       become: true
       apt:
