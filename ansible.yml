@@ -81,9 +81,12 @@
             block: |
               command="mount --make-rshared /"
 
+        - name: Make a VSCode shortcut on the Windows desktop.
+          tags:
+            - code
+          shell: >
+            powershell.exe -NoProfile -ExecutionPolicy Bypass
+            -File '{{ lookup("pipe", "wslpath -w " ~ (playbook_dir ~ "/windows/create-vscode-userdata.ps1")) | trim }}'
 
-
-        # - name: Enable lingering
-        #   command: "loginctl enable-linger"
 
 
