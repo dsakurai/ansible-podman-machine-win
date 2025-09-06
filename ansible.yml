@@ -96,5 +96,49 @@
             -File '{{ lookup("pipe", "wslpath -w " ~ (playbook_dir ~ "/windows/create-vscode-userdata.ps1")) | trim }}'
 
 
+        - name: VSCode settings
+          tags: json
+          vars:
+            settings_json: '/mnt/c/Users/Daisuke Sakurai/.local/share/vscode/User/settings.json'
+          block:
+            - name: If the settings file is empty, add '{}'
+              block:
+                - name: Acquire the file status
+                  stat:
+                    path: "{{ settings_json }}"
+                  register: json_status
+
+                - name: Initialize settings.json with '{}' if the file is missing or empty
+                  ansible.builtin.copy:
+                    dest: "{{ settings_json }}"
+                    content: "{}"
+                  when: not json_status.stat.exists or json_status.stat.size|int == 0
+
+
+            - name: Read VSCode settings
+              set_fact:
+                jsondata: "{{ lookup('file', settings_json) | from_json}}"
+
+            - name: VSCode settings to be added
+              set_fact:
+                vscode: {
+                    "workbench.colorCustomizations": {
+                        "titleBar.activeBackground": "#8dc3ec77",
+                        "titleBar.activeForeground": "#000000",
+                        "titleBar.inactiveBackground": "#8dc3ec37"
+                    },
+                    "workbench.colorTheme": "Default Light Modern"
+                  }
+
+            - name: Insert our VSCode settings
+              set_fact:
+                merged: "{{ jsondata | combine (vscode) }}"
+
+            - name: Write our settings to settings.json
+              ansible.builtin.copy:
+                content: "{{ merged | to_nice_json }}"
+                dest: "{{ settings_json }}"
+                backup: true
+
 
 
