@@ -81,12 +81,20 @@
             block: |
               command="mount --make-rshared /"
 
+        - name: Add the user to docker group.
+          become: true
+          user:
+            name: "{{ lookup('env','USER') }}"
+            groups: docker
+            append: yes
+
         - name: Make a VSCode shortcut on the Windows desktop.
           tags:
             - code
           shell: >
             powershell.exe -NoProfile -ExecutionPolicy Bypass
             -File '{{ lookup("pipe", "wslpath -w " ~ (playbook_dir ~ "/windows/create-vscode-userdata.ps1")) | trim }}'
+
 
 
 
