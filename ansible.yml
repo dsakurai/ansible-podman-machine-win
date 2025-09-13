@@ -205,6 +205,19 @@
           become: true
           ansible.builtin.debug:
             var: smi_out.stdout
+        
+        # Podman. Re-generation needed when upgrading the NVIDIA container toolkit.
+        - name: Generate NVIDIA CDI spec
+          command: >
+            nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+          become: true
+          # args:
+          # creates: /etc/cdi/nvidia.yaml
+
+        - name: GPU smoke test (nvidia-smi inside container)
+          ansible.builtin.shell: |
+            podman run --rm --device nvidia.com/gpu=all docker.io/{{ cuda_test_image }} nvidia-smi
+
 
 
 
