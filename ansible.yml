@@ -139,6 +139,72 @@
                 content: "{{ merged | to_nice_json }}"
                 dest: "{{ settings_json }}"
                 backup: true
+    - name: CUDA
+      tags: cuda
+      vars:
+        cuda_test_image: nvidia/cuda:12.4.1-base-ubuntu22.04
+      block:
+        - name: Ensure necessary packages exist
+          become: yes
+          apt:
+            name:
+              - curl
+              - ca-certificates
+              - gnupg
+            state: present
+            update_cache: true
+
+        - name: Add NVIDIA Container Toolkit APT key
+          become: true
+          shell: |
+            curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey \
+            | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+          args:
+            creates: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+
+        - name: Add NVIDIA Container Toolkit APT repo
+          become: true
+          shell: |
+            curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list \
+            | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' \
+            | tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+          args:
+            creates: /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+        - name: Install NVIDIA Container Toolkit package
+          become: true
+          apt:
+            name: nvidia-container-toolkit
+            update_cache: true
+        - name: Configure Docker runtime via nvidia-ctk
+          become: true
+          command: nvidia-ctk runtime configure --runtime=docker --set-as-default
+          register: nctk_cfg
+          changed_when: "'already configured' not in nctk_cfg.stdout | lower and 'already configured' not in nctk_cfg.stderr | lower"
+          # Safe to re-run; it edits /etc/docker/daemon.json when needed.
+          # Ref: NVIDIA docs (Configuring Docker)
+          # https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/1.14.0/install-guide.html
+
+        - name: Pull CUDA base image for test
+          become: true
+          ansible.builtin.command:
+            cmd: "docker pull {{ cuda_test_image }}"
+          changed_when: false
+          failed_when: false  # allow offline envs to skip pull
+
+        - name: GPU smoke test (nvidia-smi inside container)
+          become: true
+          ansible.builtin.shell: |
+            set -o pipefail
+            docker run --rm --gpus all {{ cuda_test_image }} nvidia-smi | sed -n '1,15p'
+          register: smi_out
+          changed_when: false
+          failed_when: false
+
+        - name: Show nvidia-smi result (first lines)
+          become: true
+          ansible.builtin.debug:
+            var: smi_out.stdout
 
 
 
