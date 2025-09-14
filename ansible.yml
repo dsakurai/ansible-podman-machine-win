@@ -3,6 +3,16 @@
   hosts: localhost
 
   tasks:
+    
+    - name: Update ansible for root
+      command: ansible-galaxy collection install -U containers.podman
+      become: true
+      tags: ansible
+
+    - name: Update ansible for non-root user
+      command: ansible-galaxy collection install -U containers.podman
+      tags: ansible
+    
     - name: Update and upgrade
       become: true
       apt:
