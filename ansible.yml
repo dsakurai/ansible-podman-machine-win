@@ -227,7 +227,47 @@
         - name: GPU smoke test (nvidia-smi inside container)
           ansible.builtin.shell: |
             podman run --rm --device nvidia.com/gpu=all docker.io/{{ cuda_test_image }} nvidia-smi
+    - name: OnlyOffice
+      tags: onlyoffice
+      block:
+        - name: Ensure gnupg is installed
+          become: true
+          ansible.builtin.apt:
+            name: gnupg
+            state: present
+            update_cache: true
 
+        - name: Import OnlyOffice repository key from keyserver
+          become: true
+          ansible.builtin.shell: |
+            install -d -m 700 /root/.gnupg
+            gpg --no-default-keyring --keyring gnupg-ring:/tmp/onlyoffice.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys CB2DE8E5
+            chmod 644 /tmp/onlyoffice.gpg
+            chown root:root /tmp/onlyoffice.gpg
+            mv /tmp/onlyoffice.gpg /usr/share/keyrings/onlyoffice.gpg
+          args:
+            creates: /usr/share/keyrings/onlyoffice.gpg
+        
+        - name: Ensure OnlyOffice runtime dependencies
+          become: true
+          ansible.builtin.apt:
+            name:
+              - libnss3
+              - libnspr4
+            state: present
+
+        - name: Add OnlyOffice APT repository
+          become: true
+          ansible.builtin.apt_repository:
+            repo: "deb [signed-by=/usr/share/keyrings/onlyoffice.gpg] https://download.onlyoffice.com/repo/debian squeeze main"
+            filename: onlyoffice
+            state: present
+
+        - name: Install OnlyOffice Desktop Editors
+          become: true
+          ansible.builtin.apt:
+            name: onlyoffice-desktopeditors
+            update_cache: true
 
 
 
